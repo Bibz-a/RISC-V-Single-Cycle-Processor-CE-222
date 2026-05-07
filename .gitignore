@@ -1,0 +1,9 @@
+*.vcd
+*.vvp
+*.out
+*.o
+sim
+a.out
+
+wave.vcd
+dump.vcd
