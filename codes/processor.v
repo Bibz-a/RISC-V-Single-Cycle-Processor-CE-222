@@ -176,7 +176,7 @@ always @(*) begin
             ALUSrc   = 1;
             RegWrite = 1;
             ALUOp1   = 1;  
-            ALUOp0   = 0;
+            ALUOp0   = 1;
         end
 
     endcase
@@ -193,8 +193,8 @@ always @(*) begin
         7'b0000011: imm_out = {{20{instruction[31]}}, instruction[31:20]};                    // I-type (lw)
         7'b0010011: imm_out = {{20{instruction[31]}}, instruction[31:20]};                    // I-type ALU
         7'b0100011: imm_out = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]}; // S-type (sw)
-        7'b1100011: imm_out = {{19{instruction[31]}}, instruction[31], instruction[7],        // B-type (beq)
-                                instruction[30:25], instruction[11:8], 1'b0};
+        7'b1100011: imm_out = {{20{instruction[31]}}, instruction[7],
+                                 instruction[30:25], instruction[11:8], 1'b0};
         default:    imm_out = 32'd0;
     endcase
 end
@@ -212,31 +212,23 @@ module alu_control(
     input  [2:0] funct3,
     output reg [3:0] operation
 );
-
 always @(*) begin
     case (ALUOp)
-
         2'b00: operation = 4'b0010;   // lw/sw → ADD
-
         2'b01: operation = 4'b0110;   // beq → SUB
-
         2'b10: begin
             case ({funct7, funct3})
-
                 10'b0000000000: operation = 4'b0010; // ADD
                 10'b0100000000: operation = 4'b0110; // SUB
                 10'b0000000111: operation = 4'b0000; // AND
                 10'b0000000110: operation = 4'b0001; // OR
-
-                default: operation = 4'bxxxx;
+                default:        operation = 4'bxxxx;
             endcase
-        end
-
+        end                                          // ← closes 2'b10 begin
+        2'b11: operation = 4'b0010;   // I-type ALU (addi) → ADD
         default: operation = 4'bxxxx;
-
     endcase
 end
-
 endmodule
 
 
@@ -330,7 +322,6 @@ wire [2:0] funct3   = instruction_code[14:12];
 wire [4:0] rs1      = instruction_code[19:15];
 wire [4:0] rs2      = instruction_code[24:20];
 wire [6:0] funct7   = instruction_code[31:25];
-wire funct7_5 = instruction_code[30];
 
 //Control signals
 wire ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch, ALUOp1, ALUOp0;
